@@ -1,0 +1,74 @@
+# Dependencies
+node_modules
+.npm
+.pnp
+.pnp.js
+
+# Build output
+dist
+build
+*.tsbuildinfo
+
+# Caches
+.cache
+.eslintcache
+.prettiercache
+*.tgz
+
+# Code-first GraphQL schema (generated on boot)
+src/schema.gql
+
+# Prisma generated client (only if a custom output path is configured)
+/generated
+prisma/generated
+
+# Compiled output of the TypeScript seed script (run via `tsx prisma/seed.ts`)
+prisma/seed.js
+prisma/seed.js.map
+prisma/seed.d.ts
+
+# Environment & secrets — ignore everything except the committed template
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test & coverage
+coverage
+.nyc_output
+
+# Uploaded file binaries (server-confined storage root)
+uploads
+
+# Runtime / temp
+tmp
+temp
+*.pid
+*.seed
+pids
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea
+*.swp
+*.swo
+*.suo
+
+# Cursor (local-only rules & commands)
+.cursor
+
+#doc
+docs/
+
