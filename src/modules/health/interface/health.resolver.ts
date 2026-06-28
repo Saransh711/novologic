@@ -1,8 +1,10 @@
 import { Query, Resolver } from '@nestjs/graphql';
+import { SkipThrottle } from '@nestjs/throttler';
 import { HealthService } from '../application/health.service';
 import { HealthReport } from '../domain/health.types';
 import { HealthStatus } from './dto/health-status.object';
 
+@SkipThrottle()
 @Resolver(() => HealthStatus)
 export class HealthResolver {
   constructor(private readonly healthService: HealthService) {}

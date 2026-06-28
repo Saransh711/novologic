@@ -5,6 +5,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsString,
+  Matches,
   Max,
   Min,
   validateSync,
@@ -54,6 +55,56 @@ export class EnvironmentVariables {
   @IsInt()
   @Min(1)
   RATE_LIMIT_MAX = 120;
+
+  @Transform(({ value }) => (value === undefined ? 60000 : Number(value)))
+  @IsInt()
+  @Min(1)
+  UPLOAD_RATE_LIMIT_TTL_MS = 60000;
+
+  @Transform(({ value }) => (value === undefined ? 20 : Number(value)))
+  @IsInt()
+  @Min(1)
+  UPLOAD_RATE_LIMIT_MAX = 20;
+
+  @Transform(({ value }) => (value === undefined || value === '' ? './uploads' : String(value)))
+  @IsString()
+  @IsNotEmpty()
+  UPLOADS_DIR = './uploads';
+
+  @Transform(({ value }) => (value === undefined ? 10_485_760 : Number(value)))
+  @IsInt()
+  @Min(1)
+  MAX_UPLOAD_SIZE_BYTES = 10_485_760;
+
+  @Transform(({ value }) =>
+    value === undefined || value === ''
+      ? 'image/png,image/jpeg,image/gif,image/webp,application/pdf'
+      : String(value),
+  )
+  @IsString()
+  @IsNotEmpty()
+  ALLOWED_MIME_TYPES = 'image/png,image/jpeg,image/gif,image/webp,application/pdf';
+
+  @Transform(({ value }) =>
+    value === undefined || value === ''
+      ? 'http://localhost:3000'
+      : String(value).replace(/\/+$/, ''),
+  )
+  @IsString()
+  @IsNotEmpty()
+  PUBLIC_BASE_URL = 'http://localhost:3000';
+
+  @Transform(({ value }) => {
+    const raw = value === undefined || value === '' ? '/uploads' : String(value);
+    const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
+    return withLeadingSlash.replace(/\/+$/, '') || '/uploads';
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\/[A-Za-z0-9._/-]*$/, {
+    message: 'UPLOADS_PUBLIC_PATH must be an absolute URL path of safe characters.',
+  })
+  UPLOADS_PUBLIC_PATH = '/uploads';
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
