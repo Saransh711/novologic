@@ -1,0 +1,11 @@
+// Prisma schema for workbook-api.
+// Domain models for the Online Workbook product are added here and applied
+// via named migrations (`npm run prisma:migrate`). Never edit the DB manually.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

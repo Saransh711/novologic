@@ -1,0 +1,33 @@
+# Render Blueprint for workbook-api.
+# Provisions a managed PostgreSQL instance and a Dockerized web service.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: workbook-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /graphql
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: GRAPHQL_PLAYGROUND
+        value: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: RATE_LIMIT_TTL_MS
+        value: 60000
+      - key: RATE_LIMIT_MAX
+        value: 120
+      - key: DATABASE_URL
+        fromDatabase:
+          name: workbook-db
+          property: connectionString
+
+databases:
+  - name: workbook-db
+    databaseName: workbook
+    user: workbook
+    plan: basic-256mb
