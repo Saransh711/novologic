@@ -41,6 +41,9 @@ pnpm-debug.log*
 coverage
 .nyc_output
 
+# Uploaded file binaries (server-confined storage root)
+uploads
+
 # Runtime / temp
 tmp
 temp

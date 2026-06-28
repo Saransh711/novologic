@@ -7,7 +7,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { join } from 'node:path';
 import type { Request, Response } from 'express';
 import { DomainErrorFilter } from './common/filters/domain-error.filter';
-import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
+import { MulterExceptionFilter } from './common/filters/multer-exception.filter';
+import { AppThrottlerGuard } from './common/guards/app-throttler.guard';
 import { EnvironmentVariables, NodeEnv, validateEnv } from './config/env.validation';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { FileModule } from './modules/file/file.module';
@@ -61,11 +62,15 @@ type TypedConfigService = ConfigService<EnvironmentVariables, true>;
   providers: [
     {
       provide: APP_GUARD,
-      useClass: GqlThrottlerGuard,
+      useClass: AppThrottlerGuard,
     },
     {
       provide: APP_FILTER,
       useClass: DomainErrorFilter,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: MulterExceptionFilter,
     },
   ],
 })

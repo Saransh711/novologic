@@ -5,6 +5,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsString,
+  Matches,
   Max,
   Min,
   validateSync,
@@ -73,6 +74,27 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   ALLOWED_MIME_TYPES = 'image/png,image/jpeg,image/gif,image/webp,application/pdf';
+
+  @Transform(({ value }) =>
+    value === undefined || value === ''
+      ? 'http://localhost:3000'
+      : String(value).replace(/\/+$/, ''),
+  )
+  @IsString()
+  @IsNotEmpty()
+  PUBLIC_BASE_URL = 'http://localhost:3000';
+
+  @Transform(({ value }) => {
+    const raw = value === undefined || value === '' ? '/uploads' : String(value);
+    const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
+    return withLeadingSlash.replace(/\/+$/, '') || '/uploads';
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\/[A-Za-z0-9._/-]*$/, {
+    message: 'UPLOADS_PUBLIC_PATH must be an absolute URL path of safe characters.',
+  })
+  UPLOADS_PUBLIC_PATH = '/uploads';
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
