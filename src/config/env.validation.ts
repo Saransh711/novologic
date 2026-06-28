@@ -56,6 +56,16 @@ export class EnvironmentVariables {
   @Min(1)
   RATE_LIMIT_MAX = 120;
 
+  @Transform(({ value }) => (value === undefined ? 60000 : Number(value)))
+  @IsInt()
+  @Min(1)
+  UPLOAD_RATE_LIMIT_TTL_MS = 60000;
+
+  @Transform(({ value }) => (value === undefined ? 20 : Number(value)))
+  @IsInt()
+  @Min(1)
+  UPLOAD_RATE_LIMIT_MAX = 20;
+
   @Transform(({ value }) => (value === undefined || value === '' ? './uploads' : String(value)))
   @IsString()
   @IsNotEmpty()

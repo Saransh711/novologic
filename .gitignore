@@ -22,6 +22,11 @@ src/schema.gql
 /generated
 prisma/generated
 
+# Compiled output of the TypeScript seed script (run via `tsx prisma/seed.ts`)
+prisma/seed.js
+prisma/seed.js.map
+prisma/seed.d.ts
+
 # Environment & secrets — ignore everything except the committed template
 .env
 .env.*

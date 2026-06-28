@@ -7,6 +7,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { Response } from 'express';
 import helmet from 'helmet';
+import { Logger as PinoLogger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import {
   applyUploadConstraintsToDocument,
@@ -50,8 +51,12 @@ function parseCorsOrigins(raw: string): string[] {
 }
 
 async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+
+  // Route all framework logs through pino so output is structured end to end,
+  // including anything logged during the rest of bootstrap.
+  app.useLogger(app.get(PinoLogger));
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false });
 
   const config = app.get<ConfigService<EnvironmentVariables, true>>(ConfigService);
   const nodeEnv = config.get('NODE_ENV', { infer: true });
@@ -118,4 +123,12 @@ async function bootstrap(): Promise<void> {
   }
 }
 
-void bootstrap();
+bootstrap().catch((error: unknown) => {
+  // The pino logger may not be wired yet if bootstrap failed early, so fall back
+  // to the framework logger to guarantee the failure is surfaced before exit.
+  new Logger('Bootstrap').error(
+    'Fatal error during bootstrap',
+    error instanceof Error ? error.stack : String(error),
+  );
+  process.exit(1);
+});

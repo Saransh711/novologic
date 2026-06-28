@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { ErrorResponse } from '../../../common/dto/error-response';
 import { InvalidInputError } from '../../../common/errors/domain.error';
+import { UploadRateLimited } from '../../../common/throttling/throttler.constants';
 import { FileService } from '../application/file.service';
 import { UploadFileResponse } from './dto/upload-file-response';
 
@@ -43,6 +44,7 @@ export class FileUploadController {
 
   @Post('upload')
   @HttpCode(HttpStatus.CREATED)
+  @UploadRateLimited()
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({
     operationId: UPLOAD_FILE_OPERATION_ID,
