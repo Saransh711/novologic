@@ -128,7 +128,72 @@ See [`.env.example`](./.env.example). The schema is validated at boot in
 
 ## Deployment (Render)
 
-`render.yaml` is a Render Blueprint that provisions a managed PostgreSQL
-database and a Dockerized web service. `DATABASE_URL` is wired automatically
-from the database; set `CORS_ORIGINS` to your frontend origin in the Render
-dashboard.
+[`render.yaml`](./render.yaml) is a Render Blueprint that provisions everything
+needed to run the API in production:
+
+- **Web service** (`workbook-api`) — built from the multi-stage [`Dockerfile`](./Dockerfile).
+- **Managed PostgreSQL** (`workbook-db`) — `DATABASE_URL` is wired automatically
+  into the web service via `fromDatabase`.
+- **Persistent disk** — mounted at `/app/uploads` so uploaded binaries survive
+  deploys/restarts.
+
+### Production build & runtime
+
+The Docker image is a three-stage build (deps → build → lean runtime):
+
+1. Installs dependencies, runs `prisma generate`, and compiles to `dist/` with
+   `nest build`.
+2. Compiles the standalone seed script and prunes dev dependencies.
+3. Ships a minimal runtime image that runs as the non-root `node` user.
+
+`NODE_ENV=production` disables the GraphQL playground/introspection and applies
+strict Helmet/CSP defaults.
+
+### Migrations on deploy
+
+On every deploy the container entrypoint
+([`docker-entrypoint.sh`](./docker-entrypoint.sh)) runs **before** the server
+boots:
+
+1. `prisma migrate deploy` — applies any pending migrations (idempotent).
+2. Optional demo seeding — **disabled in production** (`SEED_ON_STARTUP=false`).
+3. Starts the API (`node dist/main.js`).
+
+### Deploy steps (no auto-deploy required)
+
+1. Push this repository to GitHub/GitLab.
+2. In Render, create a new **Blueprint** and point it at this repo; Render reads
+   `render.yaml` and provisions the database, disk, and web service.
+3. Fill in the `sync: false` secrets in the dashboard before the first deploy
+   finishes:
+   - `CORS_ORIGINS` — your frontend origin(s), comma-separated.
+   - `PUBLIC_BASE_URL` — the assigned service URL, e.g.
+     `https://workbook-api.onrender.com` (no trailing slash).
+4. Verify health at `https://<your-service>.onrender.com/health`.
+
+> **Scaling note:** the persistent disk pins the web service to a single
+> instance (no horizontal scaling or zero-downtime deploys). To scale out,
+> move uploads to object storage (S3/R2) and remove the disk.
+
+### Environment variables
+
+Set automatically by the Blueprint / Render, or in the dashboard:
+
+| Variable                  | Source                | Notes                                                        |
+| ------------------------- | --------------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`            | `fromDatabase`        | Injected from the managed PostgreSQL instance.               |
+| `NODE_ENV`                | `render.yaml`         | `production`.                                                 |
+| `PORT`                    | `render.yaml`         | `3000` (the app binds `0.0.0.0`).                            |
+| `GRAPHQL_PLAYGROUND`      | `render.yaml`         | `false` in production.                                        |
+| `CORS_ORIGINS`            | dashboard (`sync:false`) | Comma-separated frontend origin allowlist. **Required.**  |
+| `PUBLIC_BASE_URL`         | dashboard (`sync:false`) | Deployed origin, no trailing slash. **Required.**         |
+| `UPLOADS_DIR`             | `render.yaml`         | `/app/uploads` — must match the disk mount path.             |
+| `RATE_LIMIT_TTL_MS` / `RATE_LIMIT_MAX` | `render.yaml` | Global rate limit window/budget.                       |
+| `UPLOAD_RATE_LIMIT_TTL_MS` / `UPLOAD_RATE_LIMIT_MAX` | `render.yaml` | Stricter limit for the upload endpoint.   |
+| `MAX_UPLOAD_SIZE_BYTES`   | `render.yaml`         | Max upload size (default 10 MiB).                            |
+| `ALLOWED_MIME_TYPES`      | `render.yaml`         | Upload allowlist (images + PDF).                            |
+| `SEED_ON_STARTUP`         | `render.yaml`         | `false` — never seed demo data into the production DB.       |
+
+The full list with descriptions lives in [`.env.example`](./.env.example), and
+the schema is validated at boot in `src/config/env.validation.ts` (the app fails
+fast on invalid configuration).

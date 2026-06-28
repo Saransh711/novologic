@@ -41,7 +41,9 @@ RUN npm prune --omit=dev
 FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache openssl
+# openssl: Prisma engines. su-exec: drop from root to 'node' in the entrypoint
+# after taking ownership of a runtime-mounted persistent disk (e.g. Render).
+RUN apk add --no-cache openssl su-exec
 
 # Run as the non-root user shipped with the base image.
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
@@ -54,10 +56,13 @@ RUN chmod +x ./docker-entrypoint.sh
 
 # Pre-create the confined uploads root owned by the non-root runtime user; the
 # app writes uploaded binaries here and cannot create it under root-owned /app.
+# When a persistent disk is mounted here at runtime it is owned by root, so the
+# entrypoint re-chowns it before dropping privileges (see docker-entrypoint.sh).
 RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
 
-USER node
 EXPOSE 3000
 
-# Apply pending migrations, seed baseline data, then boot the API.
+# The entrypoint starts as root only to chown a runtime-mounted disk, then
+# re-execs itself as the non-root 'node' user. It applies pending migrations,
+# optionally seeds baseline data, then boots the API.
 ENTRYPOINT ["./docker-entrypoint.sh"]
