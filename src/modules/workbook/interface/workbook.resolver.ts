@@ -1,12 +1,24 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
-import { Prisma, Workbook } from '@prisma/client';
+import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Prisma, Workbook, WorkbookVersion } from '@prisma/client';
 import { WorkbookService } from '../application/workbook.service';
 import { SaveWorkbookInput } from './dto/save-workbook.input';
 import { WorkbookObject } from './dto/workbook.object';
+import { WorkbookVersionObject } from './dto/workbook-version.object';
 
 @Resolver(() => WorkbookObject)
 export class WorkbookResolver {
   constructor(private readonly workbookService: WorkbookService) {}
+
+  @Query(() => [WorkbookVersionObject], {
+    name: 'workbookVersions',
+    description: 'Lists the most recent archived versions of a workbook, newest first.',
+  })
+  async workbookVersions(
+    @Args('workbookId', { type: () => ID }) workbookId: string,
+  ): Promise<WorkbookVersionObject[]> {
+    const versions = await this.workbookService.listVersions(workbookId);
+    return versions.map(WorkbookResolver.toVersionDto);
+  }
 
   @Mutation(() => WorkbookObject, {
     name: 'saveWorkbook',
@@ -21,6 +33,18 @@ export class WorkbookResolver {
     return WorkbookResolver.toDto(workbook);
   }
 
+  @Mutation(() => WorkbookObject, {
+    name: 'restoreWorkbookVersion',
+    description:
+      'Restores a workbook to a previous version, archiving the current content as a new version first.',
+  })
+  async restoreWorkbookVersion(
+    @Args('versionId', { type: () => ID }) versionId: string,
+  ): Promise<WorkbookObject> {
+    const workbook = await this.workbookService.restoreVersion(versionId);
+    return WorkbookResolver.toDto(workbook);
+  }
+
   private static toDto(workbook: Workbook): WorkbookObject {
     return {
       id: workbook.id,
@@ -28,6 +52,15 @@ export class WorkbookResolver {
       content: workbook.content as Record<string, unknown>,
       createdAt: workbook.createdAt,
       updatedAt: workbook.updatedAt,
+    };
+  }
+
+  private static toVersionDto(version: WorkbookVersion): WorkbookVersionObject {
+    return {
+      id: version.id,
+      workbookId: version.workbookId,
+      content: version.content as Record<string, unknown>,
+      createdAt: version.createdAt,
     };
   }
 }

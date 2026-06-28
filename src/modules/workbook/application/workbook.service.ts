@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Workbook } from '@prisma/client';
+import { Prisma, Workbook, WorkbookVersion } from '@prisma/client';
 import { ResourceNotFoundError } from '../../../common/errors/domain.error';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { MAX_WORKBOOK_VERSIONS } from '../domain/workbook.constants';
@@ -29,16 +29,68 @@ export class WorkbookService {
         return tx.workbook.create({ data: { projectId, content } });
       }
 
-      await tx.workbookVersion.create({
-        data: {
-          workbookId: existing.id,
-          content: existing.content as Prisma.InputJsonValue,
-        },
-      });
-
+      await this.snapshotCurrent(tx, existing);
       await this.prunePreviousVersions(tx, existing.id);
 
       return tx.workbook.update({ where: { id: existing.id }, data: { content } });
+    });
+  }
+
+  /**
+   * Returns the {@link MAX_WORKBOOK_VERSIONS} most recent snapshots of a workbook,
+   * newest first. The ordering mirrors {@link prunePreviousVersions} so the list,
+   * pruning, and restore logic stay consistent.
+   */
+  async listVersions(workbookId: string): Promise<WorkbookVersion[]> {
+    const workbook = await this.prisma.workbook.findUnique({
+      where: { id: workbookId },
+      select: { id: true },
+    });
+    if (!workbook) {
+      throw new ResourceNotFoundError(`Workbook "${workbookId}" was not found.`);
+    }
+
+    return this.prisma.workbookVersion.findMany({
+      where: { workbookId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: MAX_WORKBOOK_VERSIONS,
+    });
+  }
+
+  /**
+   * Restores a workbook to the content of a previous version. The current content
+   * is first archived as a new snapshot (and history pruned to
+   * {@link MAX_WORKBOOK_VERSIONS}), then the workbook is overwritten with the
+   * selected version's content. All steps run in one transaction.
+   */
+  async restoreVersion(versionId: string): Promise<Workbook> {
+    return this.prisma.$transaction(async (tx) => {
+      const version = await tx.workbookVersion.findUnique({ where: { id: versionId } });
+      if (!version) {
+        throw new ResourceNotFoundError(`Workbook version "${versionId}" was not found.`);
+      }
+
+      const workbook = await tx.workbook.findUnique({ where: { id: version.workbookId } });
+      if (!workbook) {
+        throw new ResourceNotFoundError(`Workbook "${version.workbookId}" was not found.`);
+      }
+
+      await this.snapshotCurrent(tx, workbook);
+      await this.prunePreviousVersions(tx, workbook.id);
+
+      return tx.workbook.update({
+        where: { id: workbook.id },
+        data: { content: version.content as Prisma.InputJsonValue },
+      });
+    });
+  }
+
+  private async snapshotCurrent(tx: Prisma.TransactionClient, workbook: Workbook): Promise<void> {
+    await tx.workbookVersion.create({
+      data: {
+        workbookId: workbook.id,
+        content: workbook.content as Prisma.InputJsonValue,
+      },
     });
   }
 
