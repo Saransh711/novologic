@@ -68,3 +68,6 @@ Thumbs.db
 
 # Cursor (local-only rules & commands)
 .cursor
+
+#doc
+docs/

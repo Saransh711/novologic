@@ -52,9 +52,6 @@ function parseCorsOrigins(raw: string): string[] {
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
-
-  // Route all framework logs through pino so output is structured end to end,
-  // including anything logged during the rest of bootstrap.
   app.useLogger(app.get(PinoLogger));
   const logger = new Logger('Bootstrap');
 
@@ -73,8 +70,6 @@ async function bootstrap(): Promise<void> {
 
   app.use(
     helmet({
-      // The GraphQL sandbox (Apollo) loads assets from a CDN; relax CSP only
-      // when the playground is enabled, keep strict defaults otherwise.
       contentSecurityPolicy: playgroundEnabled ? false : undefined,
       crossOriginEmbedderPolicy: !playgroundEnabled,
     }),
@@ -94,7 +89,9 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Ensure the confined uploads root exists, then serve its contents read-only.
+
+  const frameAncestors = ['\'self\'', ...corsOrigins].join(' ');
+
   await mkdir(uploadsDir, { recursive: true });
   app.useStaticAssets(uploadsDir, {
     prefix: uploadsPublicPath,
@@ -102,11 +99,10 @@ async function bootstrap(): Promise<void> {
     dotfiles: 'deny',
     redirect: false,
     setHeaders: (res: Response) => {
-      // The allowlist excludes active content (no SVG/HTML), but pin the
-      // defaults regardless: never let the browser sniff a different type, and
-      // allow the (cross-origin) frontend to embed served assets.
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.removeHeader('X-Frame-Options');
+      res.setHeader('Content-Security-Policy', `frame-ancestors ${frameAncestors}`);
     },
   });
 
