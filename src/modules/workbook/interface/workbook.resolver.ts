@@ -9,6 +9,18 @@ import { WorkbookVersionObject } from './dto/workbook-version.object';
 export class WorkbookResolver {
   constructor(private readonly workbookService: WorkbookService) {}
 
+  @Query(() => WorkbookObject, {
+    name: 'workbook',
+    nullable: true,
+    description: 'Returns the workbook for a project, or null if none exists yet.',
+  })
+  async workbook(
+    @Args('projectId', { type: () => ID }) projectId: string,
+  ): Promise<WorkbookObject | null> {
+    const workbook = await this.workbookService.findByProjectId(projectId);
+    return workbook ? WorkbookResolver.toDto(workbook) : null;
+  }
+
   @Query(() => [WorkbookVersionObject], {
     name: 'workbookVersions',
     description: 'Lists the most recent archived versions of a workbook, newest first.',
@@ -17,7 +29,7 @@ export class WorkbookResolver {
     @Args('workbookId', { type: () => ID }) workbookId: string,
   ): Promise<WorkbookVersionObject[]> {
     const versions = await this.workbookService.listVersions(workbookId);
-    return versions.map(WorkbookResolver.toVersionDto);
+    return versions.map((version) => WorkbookResolver.toVersionDto(version));
   }
 
   @Mutation(() => WorkbookObject, {

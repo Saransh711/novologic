@@ -22,6 +22,7 @@ import { EnvironmentVariables, NodeEnv, validateEnv } from './config/env.validat
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { FileModule } from './modules/file/file.module';
 import { HealthModule } from './modules/health/health.module';
+import { ProjectModule } from './modules/project/project.module';
 import { WorkbookModule } from './modules/workbook/workbook.module';
 
 type TypedConfigService = ConfigService<EnvironmentVariables, true>;
@@ -105,6 +106,7 @@ function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): Gra
     }),
     PrismaModule,
     HealthModule,
+    ProjectModule,
     WorkbookModule,
     FileModule,
   ],

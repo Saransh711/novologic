@@ -42,6 +42,7 @@ npm install
 docker compose up -d postgres # start only the database
 npm run prisma:generate
 npm run prisma:migrate        # create/apply migrations once you add models
+npm run prisma:seed           # populate demo user/project/workbook (idempotent)
 npm run start:dev
 ```
 
@@ -53,8 +54,42 @@ The GraphQL endpoint is served at `http://localhost:3000/graphql`.
 docker compose up --build
 ```
 
-This builds the API image, starts PostgreSQL, applies pending migrations
-(`prisma migrate deploy`) and boots the API on `http://localhost:3000`.
+This single command brings the whole stack up end to end:
+
+1. Starts PostgreSQL and waits until it is healthy.
+2. Builds the API image.
+3. On API startup the entrypoint **applies pending migrations**
+   (`prisma migrate deploy`) and **seeds demo data** (idempotent), then boots
+   the server.
+
+Endpoints once it is up:
+
+- GraphQL endpoint + in-browser playground (GraphiQL): `http://localhost:3000/graphql`
+- Swagger UI (REST: health + uploads): `http://localhost:3000/docs`
+
+Seeding runs automatically by default. To skip it (e.g. once the database is
+populated) set `SEED_ON_STARTUP=false` for the `api` service. To reseed by hand:
+
+```bash
+docker compose exec api node dist/seed.js
+```
+
+### Verify the seeded data
+
+The seed creates a demo user, a **Demo Project**, and an empty workbook. Query
+them through the GraphQL endpoint:
+
+```bash
+# List seeded projects
+curl -s http://localhost:3000/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"{ projects { id name createdAt } }"}'
+
+# Fetch the workbook for a project (use an id from the previous response)
+curl -s http://localhost:3000/graphql \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"query($id: ID!){ workbook(projectId: $id){ id projectId content } }","variables":{"id":"<PROJECT_ID>"}}'
+```
 
 ## Health check
 
@@ -84,6 +119,7 @@ query {
 | `npm run prisma:generate` | Generate the Prisma client                   |
 | `npm run prisma:migrate`  | Create + apply a dev migration               |
 | `npm run prisma:deploy`   | Apply migrations (production)                |
+| `npm run prisma:seed`     | Seed demo data (idempotent)                  |
 
 ## Environment variables
 

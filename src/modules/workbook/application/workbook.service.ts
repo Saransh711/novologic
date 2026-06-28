@@ -37,6 +37,14 @@ export class WorkbookService {
   }
 
   /**
+   * Returns the project's workbook, or `null` when the project has no workbook
+   * yet. Read-only; callers map the result to a GraphQL DTO.
+   */
+  async findByProjectId(projectId: string): Promise<Workbook | null> {
+    return this.prisma.workbook.findUnique({ where: { projectId } });
+  }
+
+  /**
    * Returns the {@link MAX_WORKBOOK_VERSIONS} most recent snapshots of a workbook,
    * newest first. The ordering mirrors {@link prunePreviousVersions} so the list,
    * pruning, and restore logic stay consistent.
