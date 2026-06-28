@@ -3,13 +3,6 @@ import { GqlContextType, GqlExecutionContext } from '@nestjs/graphql';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 
-/**
- * Rate-limits both GraphQL operations and REST endpoints. The default
- * ThrottlerGuard reads the request from the HTTP context, which is undefined for
- * GraphQL resolvers; this variant resolves the underlying Express
- * request/response from whichever context is active so a single global guard
- * protects the entire surface (GraphQL mutations and the binary upload route).
- */
 @Injectable()
 export class AppThrottlerGuard extends ThrottlerGuard {
   getRequestResponse(context: ExecutionContext): { req: Request; res: Response } {

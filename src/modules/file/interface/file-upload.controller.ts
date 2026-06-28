@@ -23,20 +23,8 @@ import { UploadRateLimited } from '../../../common/throttling/throttler.constant
 import { FileService } from '../application/file.service';
 import { UploadFileResponse } from './dto/upload-file-response';
 
-/**
- * Stable OpenAPI operation id for the upload endpoint. Used by the Swagger
- * transform in `main.ts` to inject the live MIME allowlist and size limit
- * without coupling to the route path.
- */
 export const UPLOAD_FILE_OPERATION_ID = 'filesUpload';
 
-/**
- * Thin HTTP boundary for binary uploads. Multipart parsing, the size limit, and
- * the MIME allowlist are enforced by the `file` Multer interceptor configured in
- * {@link FileModule}; this controller only delegates to the service and maps the
- * result. The two-step flow is: upload here, then submit the returned
- * `storageKey` to the `uploadFileMetadata` GraphQL mutation.
- */
 @ApiTags('files')
 @Controller('files')
 export class FileUploadController {
@@ -54,8 +42,6 @@ export class FileUploadController {
       '',
       'Pass the returned `storageKey` to the `uploadFileMetadata` GraphQL mutation to persist the file metadata.',
       '',
-      // The active allowlist and size limit (sourced from ALLOWED_MIME_TYPES and
-      // MAX_UPLOAD_SIZE_BYTES) are injected here at boot by the Swagger transform.
     ].join('\n'),
   })
   @ApiConsumes('multipart/form-data')

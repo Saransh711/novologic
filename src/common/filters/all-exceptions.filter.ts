@@ -14,16 +14,6 @@ import { DomainErrorCode } from '../errors/domain.error';
 const INTERNAL_ERROR_MESSAGE = 'An unexpected error occurred.';
 const SERVER_ERROR_STATUS_THRESHOLD = 500;
 
-/**
- * Last-resort filter for anything not handled by a more specific filter
- * (e.g. {@link DomainErrorFilter}). It logs the real error with full context for
- * operators, then returns a masked, consistently shaped error to clients so
- * internal details and stack traces are never leaked across the boundary.
- *
- * Registered last in the provider list; NestJS applies the most specific
- * matching filter first, so domain and multipart errors are still handled by
- * their dedicated filters.
- */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);

@@ -2,11 +2,7 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from '@nestjs/commo
 import type { Response } from 'express';
 import { MulterError } from 'multer';
 
-/**
- * Maps low-level Multer multipart parsing failures (size limit exceeded,
- * unexpected fields, too many files) to clean HTTP responses, so upload clients
- * receive a meaningful 4xx instead of an opaque 500.
- */
+
 @Catch(MulterError)
 export class MulterExceptionFilter implements ExceptionFilter {
   catch(exception: MulterError, host: ArgumentsHost): void {

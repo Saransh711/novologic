@@ -120,8 +120,6 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch((error: unknown) => {
-  // The pino logger may not be wired yet if bootstrap failed early, so fall back
-  // to the framework logger to guarantee the failure is surfaced before exit.
   new Logger('Bootstrap').error(
     'Fatal error during bootstrap',
     error instanceof Error ? error.stack : String(error),

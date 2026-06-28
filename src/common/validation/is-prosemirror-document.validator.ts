@@ -1,11 +1,6 @@
 import { registerDecorator, ValidationArguments, ValidationOptions } from 'class-validator';
 
-/**
- * Minimal structural check that a value is a ProseMirror/Tiptap document: a
- * plain (non-array) object whose `type` is the string `"doc"`. Deep schema
- * validation is intentionally deferred to the editor; this only rejects values
- * that could never render as a workbook.
- */
+
 export function isProseMirrorDocument(value: unknown): boolean {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;

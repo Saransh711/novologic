@@ -1,7 +1,6 @@
 import type { OpenAPIObject } from '@nestjs/swagger';
 
-// Derive the OpenAPI node types from the publicly exported `OpenAPIObject`
-// via indexed access, so we never depend on @nestjs/swagger internal paths.
+
 type PathItemObject = NonNullable<OpenAPIObject['paths']>[string];
 type OperationObject = NonNullable<PathItemObject['post']>;
 type RequestBodyObject = Exclude<NonNullable<OperationObject['requestBody']>, { $ref: string }>;
@@ -21,12 +20,7 @@ export interface UploadConstraints {
   readonly maxUploadSizeBytes: number;
 }
 
-/**
- * Injects the live MIME allowlist and size limit into the upload operation's
- * OpenAPI documentation, so the published contract always matches the running
- * configuration rather than hardcoded defaults. Looked up by `operationId` to
- * stay decoupled from the route path; a no-op if the operation is absent.
- */
+
 export function applyUploadConstraintsToDocument(
   document: OpenAPIObject,
   operationId: string,

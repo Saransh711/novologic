@@ -10,13 +10,6 @@ const HTTP_STATUS_BY_CODE: Record<DomainErrorCode, HttpStatus> = {
   [DomainErrorCode.InvalidInput]: HttpStatus.BAD_REQUEST,
 };
 
-/**
- * Translates application-layer {@link DomainError}s into the right boundary
- * representation: a GraphQL error with a stable `extensions.code` for GraphQL
- * operations, or a JSON HTTP error with the mapped status for REST endpoints
- * (e.g. the binary upload controller). Keeps resolvers and controllers free of
- * error-mapping concerns.
- */
 @Catch(DomainError)
 export class DomainErrorFilter implements GqlExceptionFilter {
   catch(exception: DomainError, host: ArgumentsHost): void {

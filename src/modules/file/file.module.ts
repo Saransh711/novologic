@@ -24,9 +24,7 @@ import { FileResolver } from './interface/file.resolver';
             .filter((type) => type.length > 0),
         );
 
-        return {
-          // Buffer uploads in memory so binaries never touch a client-controlled
-          // path; the storage layer alone decides where bytes are written.
+        return {  
           storage: memoryStorage(),
           limits: { fileSize: maxUploadSizeBytes, files: 1 },
           fileFilter: (_request, file, callback) => {

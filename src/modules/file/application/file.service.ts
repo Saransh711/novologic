@@ -21,7 +21,6 @@ export interface UploadFileMetadata {
   storageKey: string;
 }
 
-/** A binary received at the upload boundary, ready to be persisted. */
 export interface IncomingBinary {
   originalName: string;
   mimeType: string;
@@ -29,7 +28,6 @@ export interface IncomingBinary {
   content: Buffer;
 }
 
-/** Result of storing a binary: the key + URL the client uses thereafter. */
 export interface StoredBinaryResult {
   storageKey: string;
   url: string;
@@ -62,10 +60,6 @@ export class FileService {
     this.uploadsPublicPath = config.get('UPLOADS_PUBLIC_PATH', { infer: true });
   }
 
-  /**
-   * Validates and persists an uploaded binary, returning the server-generated
-   * storage key and served URL the client passes to `uploadFileMetadata`.
-   */
   async upload(binary: IncomingBinary): Promise<StoredBinaryResult> {
     this.assertAllowedMimeType(binary.mimeType);
     this.assertWithinSizeLimit(binary.size);
@@ -82,7 +76,6 @@ export class FileService {
     };
   }
 
-  /** Persists metadata for a binary already stored under `storageKey`. */
   async create(metadata: UploadFileMetadata): Promise<File> {
     this.assertAllowedMimeType(metadata.mimeType);
     this.assertWithinSizeLimit(metadata.size);
@@ -114,7 +107,6 @@ export class FileService {
     }
   }
 
-  /** Removes the file's stored binary (if present) and its metadata record. */
   async delete(id: string): Promise<File> {
     const file = await this.prisma.file.findUnique({ where: { id } });
     if (!file) {
@@ -152,14 +144,8 @@ function isUniqueConstraintError(error: unknown): boolean {
 
 const MAX_DISPLAY_NAME_LENGTH = 255;
 
-/**
- * Derives a safe display name from a client-supplied filename: strips any path
- * components and control characters and bounds the length. Used for display
- * only — never as a storage path.
- */
 function sanitizeDisplayName(originalName: string): string {
   const baseName = originalName.split(/[\\/]/).pop() ?? '';
-  // eslint-disable-next-line no-control-regex
   const withoutControlChars = baseName.replace(/[\u0000-\u001f\u007f]/g, '').trim();
   const safeName = withoutControlChars.slice(0, MAX_DISPLAY_NAME_LENGTH);
   return safeName.length > 0 ? safeName : 'upload';

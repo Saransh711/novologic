@@ -5,8 +5,6 @@ import { HealthService } from '../application/health.service';
 import { HealthReport } from '../domain/health.types';
 import { HealthStatusResponse } from './dto/health-status.response';
 
-// Health probes are polled frequently by load balancers and orchestrators;
-// exempt them so monitoring never trips (and never depletes) the rate limit.
 @SkipThrottle()
 @ApiTags('health')
 @Controller('health')

@@ -1,10 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-/**
- * REST response returned after a binary upload. The `storageKey` is passed back
- * to the `uploadFileMetadata` GraphQL mutation; `url` is where the binary is
- * served from.
- */
+
 export class UploadFileResponse {
   @ApiProperty({
     description:

@@ -7,11 +7,7 @@ import { EnvironmentVariables } from '../../config/env.validation';
 import { InvalidInputError } from '../../common/errors/domain.error';
 import { FileStorage, StoredBinary } from './file-storage';
 
-/**
- * Local filesystem implementation of {@link FileStorage}. Every operation
- * resolves the storage key beneath a single confined root and rejects any path
- * that escapes it, defending against path-traversal regardless of caller input.
- */
+
 @Injectable()
 export class LocalFileStorage extends FileStorage {
   private readonly logger = new Logger(LocalFileStorage.name);
@@ -27,8 +23,7 @@ export class LocalFileStorage extends FileStorage {
     const absolutePath = this.resolveWithinRoot(storageKey);
 
     await mkdir(dirname(absolutePath), { recursive: true });
-    // `wx` fails if the path already exists, guaranteeing we never clobber an
-    // existing binary even in the astronomically unlikely event of a key clash.
+
     await writeFile(absolutePath, content, { flag: 'wx' });
 
     return storageKey;
@@ -60,10 +55,7 @@ export class LocalFileStorage extends FileStorage {
     }
   }
 
-  /**
-   * Builds a server-controlled, date-sharded key (`YYYY/MM/<uuid>.<ext>`) so no
-   * client input ever reaches the filesystem path.
-   */
+
   private static generateStorageKey(extension: string): string {
     const now = new Date();
     const year = now.getUTCFullYear().toString();

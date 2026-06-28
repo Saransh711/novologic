@@ -27,11 +27,7 @@ import { WorkbookModule } from './modules/workbook/workbook.module';
 
 type TypedConfigService = ConfigService<EnvironmentVariables, true>;
 
-/**
- * Strips internal detail (stack traces, original error objects) from GraphQL
- * errors before they leave the server, exposing only the safe message, stable
- * extensions code, path, and locations.
- */
+
 function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): GraphQLFormattedError {
   const original = error instanceof GraphQLError ? error : undefined;
   const code =
@@ -69,8 +65,7 @@ function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): Gra
             limit: config.get('RATE_LIMIT_MAX', { infer: true }),
           },
           {
-            // Scoped to handlers marked with `@UploadRateLimited()`; skipped
-            // everywhere else so ordinary routes keep the broader default limit.
+         
             name: UPLOAD_THROTTLER,
             ttl: config.get('UPLOAD_RATE_LIMIT_TTL_MS', { infer: true }),
             limit: config.get('UPLOAD_RATE_LIMIT_MAX', { infer: true }),
@@ -90,8 +85,7 @@ function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): Gra
         const playgroundEnabled = config.get('GRAPHQL_PLAYGROUND', { infer: true });
         const isProduction = config.get('NODE_ENV', { infer: true }) === NodeEnv.Production;
         return {
-          // Persist the generated SDL during local development for review;
-          // generate it in memory in production where `src` is not shipped.
+       
           autoSchemaFile: isProduction ? true : join(process.cwd(), 'src/schema.gql'),
           sortSchema: true,
           playground: false,
@@ -115,8 +109,7 @@ function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): Gra
       provide: APP_GUARD,
       useClass: AppThrottlerGuard,
     },
-    // Catch-all safety net registered first; NestJS still routes to the more
-    // specific `@Catch(...)` filters below when their type matches.
+ 
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
