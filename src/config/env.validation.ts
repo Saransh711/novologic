@@ -54,6 +54,25 @@ export class EnvironmentVariables {
   @IsInt()
   @Min(1)
   RATE_LIMIT_MAX = 120;
+
+  @Transform(({ value }) => (value === undefined || value === '' ? './uploads' : String(value)))
+  @IsString()
+  @IsNotEmpty()
+  UPLOADS_DIR = './uploads';
+
+  @Transform(({ value }) => (value === undefined ? 10_485_760 : Number(value)))
+  @IsInt()
+  @Min(1)
+  MAX_UPLOAD_SIZE_BYTES = 10_485_760;
+
+  @Transform(({ value }) =>
+    value === undefined || value === ''
+      ? 'image/png,image/jpeg,image/gif,image/webp,application/pdf'
+      : String(value),
+  )
+  @IsString()
+  @IsNotEmpty()
+  ALLOWED_MIME_TYPES = 'image/png,image/jpeg,image/gif,image/webp,application/pdf';
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

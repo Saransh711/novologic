@@ -2,14 +2,17 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { join } from 'node:path';
 import type { Request, Response } from 'express';
+import { DomainErrorFilter } from './common/filters/domain-error.filter';
 import { GqlThrottlerGuard } from './common/guards/gql-throttler.guard';
 import { EnvironmentVariables, NodeEnv, validateEnv } from './config/env.validation';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
+import { FileModule } from './modules/file/file.module';
 import { HealthModule } from './modules/health/health.module';
+import { WorkbookModule } from './modules/workbook/workbook.module';
 
 type TypedConfigService = ConfigService<EnvironmentVariables, true>;
 
@@ -52,11 +55,17 @@ type TypedConfigService = ConfigService<EnvironmentVariables, true>;
     }),
     PrismaModule,
     HealthModule,
+    WorkbookModule,
+    FileModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: GqlThrottlerGuard,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: DomainErrorFilter,
     },
   ],
 })
