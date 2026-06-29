@@ -7,6 +7,7 @@ import {
   IsString,
   Matches,
   Max,
+  MinLength,
   Min,
   validateSync,
 } from 'class-validator';
@@ -15,6 +16,12 @@ export enum NodeEnv {
   Development = 'development',
   Production = 'production',
   Test = 'test',
+}
+
+export enum CookieSameSite {
+  Lax = 'lax',
+  Strict = 'strict',
+  None = 'none',
 }
 
 const toBoolean = ({ value }: { value: unknown }): boolean => {
@@ -105,6 +112,59 @@ export class EnvironmentVariables {
     message: 'UPLOADS_PUBLIC_PATH must be an absolute URL path of safe characters.',
   })
   UPLOADS_PUBLIC_PATH = '/uploads';
+
+  // --- Authentication -------------------------------------------------------
+
+  @IsString()
+  @MinLength(32, {
+    message: 'JWT_ACCESS_SECRET must be at least 32 characters of high-entropy secret.',
+  })
+  JWT_ACCESS_SECRET!: string;
+
+  @IsString()
+  @MinLength(32, {
+    message: 'JWT_REFRESH_SECRET must be at least 32 characters of high-entropy secret.',
+  })
+  JWT_REFRESH_SECRET!: string;
+
+  @Transform(({ value }) => (value === undefined || value === '' ? '15m' : String(value)))
+  @IsString()
+  @IsNotEmpty()
+  ACCESS_TOKEN_TTL = '15m';
+
+  @Transform(({ value }) => (value === undefined || value === '' ? '7d' : String(value)))
+  @IsString()
+  @IsNotEmpty()
+  REFRESH_TOKEN_TTL = '7d';
+
+  @Transform(toBoolean)
+  @IsBoolean()
+  COOKIE_SECURE = false;
+
+  @Transform(({ value }) =>
+    value === undefined || value === '' ? CookieSameSite.Lax : String(value),
+  )
+  @IsEnum(CookieSameSite)
+  COOKIE_SAMESITE: CookieSameSite = CookieSameSite.Lax;
+
+  @Transform(({ value }) => (value === undefined ? '' : String(value)))
+  @IsString()
+  COOKIE_DOMAIN = '';
+
+  @Transform(({ value }) => (value === undefined ? 60000 : Number(value)))
+  @IsInt()
+  @Min(1)
+  AUTH_RATE_LIMIT_TTL_MS = 60000;
+
+  @Transform(({ value }) => (value === undefined ? 10 : Number(value)))
+  @IsInt()
+  @Min(1)
+  AUTH_RATE_LIMIT_MAX = 10;
+
+  @Transform(({ value }) => (value === undefined || value === '' ? 'Demo123!' : String(value)))
+  @IsString()
+  @IsNotEmpty()
+  SEED_USER_PASSWORD = 'Demo123!';
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

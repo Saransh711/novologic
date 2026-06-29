@@ -12,16 +12,41 @@ datasource db {
 
 /// Account owner. Reachable from a workbook only through its project.
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  phone     String?
-  address   String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  /// Argon2id hash of the account password. Never store or expose plaintext.
+  passwordHash String
+  phone        String?
+  address      String?
+  createdAt    DateTime @default(now())
 
-  projects Project[]
+  projects      Project[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
+}
+
+/// A single issued refresh token, stored only as a hash so it can be revoked.
+/// Tokens are rotated on every use; a replayed (already-rotated) token is
+/// treated as theft and revokes the whole session family.
+model RefreshToken {
+  id           String    @id @default(cuid())
+  userId       String
+  /// SHA-256 hash of the opaque refresh token secret (never the secret itself).
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  /// Id of the token that replaced this one on rotation (for reuse detection).
+  replacedById String?
+  userAgent    String?
+  ip           String?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 /// A workspace owned by a single user. Aggregates one workbook and its files.

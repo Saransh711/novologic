@@ -14,19 +14,21 @@ import { MulterExceptionFilter } from './common/filters/multer-exception.filter'
 import { AppThrottlerGuard } from './common/guards/app-throttler.guard';
 import { createLoggerOptions } from './common/logging/logger-options.factory';
 import {
+  AUTH_THROTTLE_MARKER,
+  AUTH_THROTTLER,
   DEFAULT_THROTTLER,
   UPLOAD_THROTTLE_MARKER,
   UPLOAD_THROTTLER,
 } from './common/throttling/throttler.constants';
 import { EnvironmentVariables, NodeEnv, validateEnv } from './config/env.validation';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { FileModule } from './modules/file/file.module';
 import { HealthModule } from './modules/health/health.module';
 import { ProjectModule } from './modules/project/project.module';
 import { WorkbookModule } from './modules/workbook/workbook.module';
 
 type TypedConfigService = ConfigService<EnvironmentVariables, true>;
-
 
 function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): GraphQLFormattedError {
   const original = error instanceof GraphQLError ? error : undefined;
@@ -65,12 +67,21 @@ function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): Gra
             limit: config.get('RATE_LIMIT_MAX', { infer: true }),
           },
           {
-         
             name: UPLOAD_THROTTLER,
             ttl: config.get('UPLOAD_RATE_LIMIT_TTL_MS', { infer: true }),
             limit: config.get('UPLOAD_RATE_LIMIT_MAX', { infer: true }),
             skipIf: (context: ExecutionContext) =>
               !reflector.getAllAndOverride<boolean>(UPLOAD_THROTTLE_MARKER, [
+                context.getHandler(),
+                context.getClass(),
+              ]),
+          },
+          {
+            name: AUTH_THROTTLER,
+            ttl: config.get('AUTH_RATE_LIMIT_TTL_MS', { infer: true }),
+            limit: config.get('AUTH_RATE_LIMIT_MAX', { infer: true }),
+            skipIf: (context: ExecutionContext) =>
+              !reflector.getAllAndOverride<boolean>(AUTH_THROTTLE_MARKER, [
                 context.getHandler(),
                 context.getClass(),
               ]),
@@ -85,7 +96,6 @@ function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): Gra
         const playgroundEnabled = config.get('GRAPHQL_PLAYGROUND', { infer: true });
         const isProduction = config.get('NODE_ENV', { infer: true }) === NodeEnv.Production;
         return {
-       
           autoSchemaFile: isProduction ? true : join(process.cwd(), 'src/schema.gql'),
           sortSchema: true,
           playground: false,
@@ -99,6 +109,7 @@ function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): Gra
       },
     }),
     PrismaModule,
+    AuthModule,
     HealthModule,
     ProjectModule,
     WorkbookModule,
@@ -109,7 +120,7 @@ function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): Gra
       provide: APP_GUARD,
       useClass: AppThrottlerGuard,
     },
- 
+
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,

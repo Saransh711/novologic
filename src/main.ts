@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import type { Response } from 'express';
 import helmet from 'helmet';
 import { Logger as PinoLogger } from 'nestjs-pino';
@@ -80,6 +81,8 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
+  app.use(cookieParser());
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -89,8 +92,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-
-  const frameAncestors = ['\'self\'', ...corsOrigins].join(' ');
+  const frameAncestors = ["'self'", ...corsOrigins].join(' ');
 
   await mkdir(uploadsDir, { recursive: true });
   app.useStaticAssets(uploadsDir, {

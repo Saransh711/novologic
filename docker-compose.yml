@@ -34,6 +34,13 @@ services:
       GRAPHQL_PLAYGROUND: 'true'
       RATE_LIMIT_TTL_MS: 60000
       RATE_LIMIT_MAX: 120
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      ACCESS_TOKEN_TTL: 15m
+      REFRESH_TOKEN_TTL: 7d
+      COOKIE_SECURE: 'false'
+      COOKIE_SAMESITE: lax
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD}
       # Apply migrations + seed demo data on startup (idempotent). Set to
       # 'false' to skip seeding once the database is populated.
       SEED_ON_STARTUP: 'true'

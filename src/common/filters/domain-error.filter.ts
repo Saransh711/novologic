@@ -8,6 +8,7 @@ const HTTP_STATUS_BY_CODE: Record<DomainErrorCode, HttpStatus> = {
   [DomainErrorCode.NotFound]: HttpStatus.NOT_FOUND,
   [DomainErrorCode.Conflict]: HttpStatus.CONFLICT,
   [DomainErrorCode.InvalidInput]: HttpStatus.BAD_REQUEST,
+  [DomainErrorCode.Unauthenticated]: HttpStatus.UNAUTHORIZED,
 };
 
 @Catch(DomainError)

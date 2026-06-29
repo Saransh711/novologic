@@ -1,8 +1,8 @@
-
 export enum DomainErrorCode {
   NotFound = 'NOT_FOUND',
   Conflict = 'CONFLICT',
   InvalidInput = 'BAD_USER_INPUT',
+  Unauthenticated = 'UNAUTHENTICATED',
 }
 
 export abstract class DomainError extends Error {
@@ -24,4 +24,13 @@ export class ResourceConflictError extends DomainError {
 
 export class InvalidInputError extends DomainError {
   readonly code = DomainErrorCode.InvalidInput;
+}
+
+/**
+ * The request is not authenticated, or the supplied credentials/token are
+ * invalid. The message is intentionally generic to avoid leaking whether an
+ * account exists (no user enumeration).
+ */
+export class UnauthenticatedError extends DomainError {
+  readonly code = DomainErrorCode.Unauthenticated;
 }
