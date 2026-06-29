@@ -120,7 +120,6 @@ function maskGraphqlError(formatted: GraphQLFormattedError, error: unknown): Gra
       provide: APP_GUARD,
       useClass: AppThrottlerGuard,
     },
-
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
