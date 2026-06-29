@@ -1,0 +1,110 @@
+// Prisma schema for workbook-api.
+// Domain models for the Online Workbook product are added here and applied
+// via named migrations (`npm run prisma:migrate`). Never edit the DB manually.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Account owner. Reachable from a workbook only through its project.
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  /// Argon2id hash of the account password. Never store or expose plaintext.
+  passwordHash String
+  phone        String?
+  address      String?
+  createdAt    DateTime @default(now())
+
+  projects      Project[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+/// A single issued refresh token, stored only as a hash so it can be revoked.
+/// Tokens are rotated on every use; a replayed (already-rotated) token is
+/// treated as theft and revokes the whole session family.
+model RefreshToken {
+  id           String    @id @default(cuid())
+  userId       String
+  /// SHA-256 hash of the opaque refresh token secret (never the secret itself).
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  /// Id of the token that replaced this one on rotation (for reuse detection).
+  replacedById String?
+  userAgent    String?
+  ip           String?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+/// A workspace owned by a single user. Aggregates one workbook and its files.
+model Project {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workbook Workbook?
+  files    File[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+/// The current editable document for a project. Content is a ProseMirror/Tiptap
+/// JSON document. One workbook per project; the user is reached via the project.
+model Workbook {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  content   Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  project  Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions WorkbookVersion[]
+
+  @@map("workbooks")
+}
+
+/// Immutable snapshot of a workbook's content, captured for version history.
+model WorkbookVersion {
+  id         String   @id @default(cuid())
+  workbookId String
+  content    Json
+  createdAt  DateTime @default(now())
+
+  workbook Workbook @relation(fields: [workbookId], references: [id], onDelete: Cascade)
+
+  @@index([workbookId])
+  @@map("workbook_versions")
+}
+
+/// A binary asset uploaded to a project. `storageKey` is the server-generated
+/// path/identifier in object storage; client filenames are never used as keys.
+model File {
+  id         String   @id @default(cuid())
+  projectId  String
+  name       String
+  mimeType   String
+  size       Int
+  storageKey String   @unique
+  createdAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("files")
+}

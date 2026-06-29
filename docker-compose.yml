@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: workbook-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: workbook
+      POSTGRES_PASSWORD: workbook
+      POSTGRES_DB: workbook
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U workbook -d workbook']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: workbook-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://workbook:workbook@postgres:5432/workbook?schema=public
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3001,http://localhost:3000,
+      GRAPHQL_PLAYGROUND: 'true'
+      RATE_LIMIT_TTL_MS: 60000
+      RATE_LIMIT_MAX: 120
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      ACCESS_TOKEN_TTL: 15m
+      REFRESH_TOKEN_TTL: 7d
+      COOKIE_SECURE: 'false'
+      COOKIE_SAMESITE: lax
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD}
+      # Apply migrations + seed demo data on startup (idempotent). Set to
+      # 'false' to skip seeding once the database is populated.
+      SEED_ON_STARTUP: 'true'
+    ports:
+      - '3000:3000'
+    volumes:
+      - uploads-data:/app/uploads
+
+volumes:
+  postgres-data:
+  uploads-data:
